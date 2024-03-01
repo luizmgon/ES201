@@ -46,7 +46,8 @@ done
 for SIZE in 32 64 128 256 512
 do
 	OPTIONS="-bpred 2lev -fetch:mplat 15 -fetch:ifqsize 8 -decode:width 4 -issue:width 8 -commit:width 4 -ruu:size 16 -lsq:size 16 -res:ialu 5 -res:fpalu 1 -res:imult 1 -res:fpmult 1"
-	
+	A15_IL1="-cache:il1 il1:$SIZE:64:2:l"
+	A15
 
 	
 
