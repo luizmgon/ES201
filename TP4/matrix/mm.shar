@@ -1,0 +1,1319 @@
+#! /bin/sh
+# This is a shell archive.  Remove anything before this line, then unpack
+# it by saving it into a file and typing "sh file".  To overwrite existing
+# files, type "sh file -c".  You can also feed this as standard input via
+# unshar, or by typing "sh <file", e.g..  If this archive is complete, you
+# will see the following message at the end:
+#		"End of shell archive."
+# Contents:  MANIFEST Makefile mm.c mm.bat mm.res
+# Wrapped by aburto@octopus on Mon Mar  3 10:25:17 1997
+PATH=/bin:/usr/bin:/usr/ucb ; export PATH
+if test -f 'MANIFEST' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'MANIFEST'\"
+else
+echo shar: Extracting \"'MANIFEST'\" \(212 characters\)
+sed "s/^X//" >'MANIFEST' <<'END_OF_FILE'
+X-rw-r--r--   1 aburto        417 Dec 18  1995 Makefile
+X-rw-rw-rw-   1 aburto        380 Jan 10 10:27 mm.bat
+X-rw-r--r--   1 aburto      27748 Mar  3 10:23 mm.c
+X-rw-r--r--   1 aburto       5193 Dec  7  1995 mm.res
+END_OF_FILE
+if test 212 -ne `wc -c <'MANIFEST'`; then
+    echo shar: \"'MANIFEST'\" unpacked with wrong size!
+fi
+# end of 'MANIFEST'
+fi
+if test -f 'Makefile' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'Makefile'\"
+else
+echo shar: Extracting \"'Makefile'\" \(417 characters\)
+sed "s/^X//" >'Makefile' <<'END_OF_FILE'
+X# Matrix Multiply (mm.c) Make file.
+XDEFINES = -DUNIX -DN=500
+XFLAGS = $(DEFINES) -O2
+XFILES = Makefile mm.c mm.bat mm.res
+X
+XGCC = gcc $(FLAGS)
+X
+Xmm		: mm.c Makefile 
+X		$(GCC) mm.c -o mm
+X
+XMANIFEST	: $(FILES)
+X		ls -l $(FILES) > MANIFEST
+X
+Xshar		: $(FILES) MANIFEST
+X		shar -o mm.shar MANIFEST $(FILES)
+X
+Xtar		: $(FILES) MANIFEST
+X		tar -cf mm.tar MANIFEST $(FILES)
+X		compress mm.tar
+X		uuencode mm.tar.Z mm.tar.Z > mm.tar.Z.uue
+END_OF_FILE
+if test 417 -ne `wc -c <'Makefile'`; then
+    echo shar: \"'Makefile'\" unpacked with wrong size!
+fi
+# end of 'Makefile'
+fi
+if test -f 'mm.c' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'mm.c'\"
+else
+echo shar: Extracting \"'mm.c'\" \(27748 characters\)
+sed "s/^X//" >'mm.c' <<'END_OF_FILE'
+X/* matrix multiply tests -- C language, version 1.0, May 1993
+X *
+X * compile with -DN=<size>
+X *
+X * I usually run a script file
+X *   time.script 500 >500.times
+X * where the script file contains
+X *   cc -O -DN=$1 mm.c
+X *   a.out -n             (I suggest at least two runs per method to
+X *   a.out -n             alert you to variations.  Five or ten runs
+X *   a.out -t             each, giving avg. and std dev. of times is
+X *   a.out -t             best.)
+X *     ...
+X *
+X * Contact Mark Smotherman (mark@cs.clemson.edu) for questions, comments,
+X * and to report results showing wide variations.  E.g., a wide variation
+X * appeared on an IBM RS/6000 Model 320 with "cc -O -DN=500 mm.c" (xlc
+X * compiler):
+X *  500x500 mm - normal algorithm                     utime     230.81 secs
+X *  500x500 mm - normal algorithm                     utime     230.72 secs
+X *  500x500 mm - temporary variable in loop           utime     231.00 secs
+X *  500x500 mm - temporary variable in loop           utime     230.79 secs
+X *  500x500 mm - unrolled inner loop, factor of  8    utime     232.09 secs
+X *  500x500 mm - unrolled inner loop, factor of  8    utime     231.84 secs
+X *  500x500 mm - pointers used to access matrices     utime     230.74 secs
+X *  500x500 mm - pointers used to access matrices     utime     230.45 secs
+X *  500x500 mm - blocking, factor of  32              utime      60.40 secs
+X *  500x500 mm - blocking, factor of  32              utime      60.57 secs
+X *  500x500 mm - interchanged inner loops             utime      27.36 secs
+X *  500x500 mm - interchanged inner loops             utime      27.40 secs
+X *  500x500 mm - 20x20 subarray (from D. Warner)      utime       9.49 secs
+X *  500x500 mm - 20x20 subarray (from D. Warner)      utime       9.50 secs
+X *  500x500 mm - 20x20 subarray (from T. Maeno)       utime       9.10 secs
+X *  500x500 mm - 20x20 subarray (from T. Maeno)       utime       9.05 secs
+X *
+X * The algorithms can also be sensitive to TLB thrashing.  On a 600x600
+X * test an IBM RS/6000 Model 30 showed variations depending on relative
+X * location of the matrices.  (The model 30 has 64 TLB entries organized
+X * as 2-way set associative.)
+X *
+X * 600x600 mm - 20x20 subarray (from T. Maeno)       utime      19.12 secs
+X * 600x600 mm - 20x20 subarray (from T. Maeno)       utime      19.23 secs
+X * 600x600 mm - 20x20 subarray (from D. Warner)      utime      18.87 secs
+X * 600x600 mm - 20x20 subarray (from D. Warner)      utime      18.64 secs
+X * 600x600 mm - 20x20 btranspose (Warner/Smotherman) utime      17.70 secs
+X * 600x600 mm - 20x20 btranspose (Warner/Smotherman) utime      17.76 secs
+X * 
+X * Changing the declaration to include 10000 dummy entries between the
+X * b and c matrices (suggested by T. Maeno), i.e.,
+X *
+X * double a[N][N],b[N][N],dummy[10000],c[N][N],d[N][N],bt[N][N];
+X *
+X * 600x600 mm - 20x20 subarray (from T. Maeno)       utime      16.41 secs
+X * 600x600 mm - 20x20 subarray (from T. Maeno)       utime      16.40 secs
+X * 600x600 mm - 20x20 subarray (from D. Warner)      utime      16.68 secs
+X * 600x600 mm - 20x20 subarray (from D. Warner)      utime      16.67 secs
+X * 600x600 mm - 20x20 btranspose (Warner/Smotherman) utime      16.97 secs
+X * 600x600 mm - 20x20 btranspose (Warner/Smotherman) utime      16.98 secs
+X *
+X * I hope to add other algorithms (e.g., Strassen-Winograd) in the near
+X * future.
+X */
+X
+X/***************************************************************/
+X/* Timer options. You MUST uncomment one of the options below  */
+X/* or compile, for example, with the '-DUNIX' option.          */
+X/***************************************************************/
+X/* #define Amiga       */
+X/* #define UNIX        */
+X/* #define UNIX_Old    */
+X/* #define VMS         */
+X/* #define BORLAND_C   */
+X/* #define MSC         */
+X/* #define MAC         */
+X/* #define IPSC        */
+X/* #define FORTRAN_SEC */
+X/* #define GTODay      */
+X/* #define CTimer      */
+X/* #define UXPM        */
+X/* #define MAC_TMgr    */
+X/* #define PARIX       */
+X/* #define POSIX       */
+X/* #define WIN32       */
+X/* #define POSIX1      */
+X/***********************/
+X
+X#include <stdio.h>
+X#include <math.h>
+X
+X/* #include <sys/time.h>     */
+X/* #include <sys/resource.h> */
+X
+Xvoid msg();
+Xvoid normal();
+Xvoid tnsq();
+Xvoid unroll4();
+Xvoid unroll8();
+Xvoid unroll16();
+Xvoid pnsq();
+Xvoid transpose();
+Xvoid reg_loops();
+Xvoid tiling();
+Xvoid maeno();
+Xvoid warner();
+Xvoid robert();
+Xvoid exit();
+X
+Xdouble a[N][N],b[N][N],c[N][N],bt[N][N],d[N][N];
+X
+Xmain(argc,argv)
+X  int argc;
+X  char *argv[];
+X{
+X  char alg_choice;
+X  int parm;
+X  int i,j;
+X  double sum,row_sum;
+X  double t_start=0.0,t_end=0.0,dtime();
+X
+X/* defaults */
+X  alg_choice = 'x';
+X  parm = 4;
+X
+X  i = 1;
+X  while(argc>1){
+X    switch(argv[i][0]){
+X       case '-':
+X       alg_choice = argv[i][1];
+X       break;
+X       default:
+X       sscanf(argv[i],"%d",&parm);
+X    }
+X    argc--;
+X    i++;
+X  }
+X
+X  switch(alg_choice){
+X    case 'n':
+X       printf("%3dx%3d mm - normal algorithm                    ",N,N);
+X       break;
+X    case 'v':
+X       printf("%3dx%3d mm - temporary variable in loop          ",N,N);
+X       break;
+X    case 'p':
+X       printf("%3dx%3d mm - pointers used to access matrices    ",N,N);
+X       break;
+X    case 't':
+X       printf("%3dx%3d mm - transposed b matrix                 ",N,N);
+X       break;
+X    case 'i':
+X       printf("%3dx%3d mm - interchanged inner loops            ",N,N);
+X       break;
+X    case 'u':
+X       if((parm!=4)&&(parm!=8)&&(parm!=16)){
+X       printf("%s: unrolling factor of %d not implemented\n",argv[0],parm);
+X       printf("  usage: %s -<option> [<n>]\n",argv[0]);
+X       printf("  option u - innermost loop unrolled by factor of n=4,8,16\n");
+X       exit(1);
+X       }
+X       printf("%3dx%3d mm - unrolled inner loop, factor of %2d   ",N,N,parm);
+X       break;
+X    case 'b':
+X       if((parm<4)||(parm>N)){
+X       printf("%s: blocking step size of %d is unreasonable\n",argv[0],parm);
+X       exit(1);
+X       }
+X       printf("%3dx%3d mm - blocking, factor of %3d             ",N,N,parm);
+X       break;
+X    case 'm':
+X       if((N%parm)||(N%4)){
+X       printf("%s: matrix size for Maeno method must be\n",argv[0]);
+X       printf(" evenly divisible both by 4 and by block size %d\n",parm);
+X       exit(1);
+X       }
+X       if(parm%4){
+X       printf("%s: block size for Maeno method must be",argv[0]);
+X       printf(" evenly divisible by 4\n");
+X       exit(1);
+X       }
+X       printf("%3dx%3d mm - %3dx%3d subarray (from T. Maeno)    ",N,N,
+X       parm,parm);
+X       break;
+X    case 'w':
+X       if ((N%parm)||(N%2))
+X	 {
+X	  printf("%s: matrix size for Warner method must be\n",argv[0]);
+X	  printf(" evenly divisible both by 2 and by block size %d\n",parm);
+X	  exit(1);
+X	 }
+X       if (parm%2)
+X	 {
+X	  printf("%s: block size for Warner method must be",argv[0]);
+X	  printf(" evenly divisible by 2\n");
+X	  exit(1);
+X	 }
+X       printf("%3dx%3d mm - %3dx%3d subarray (from D. Warner)   ",N,N,parm,parm);
+X       break;
+X    case 'r':
+X       printf("%3dx%3d mm - Robert's algorithm                  ",N,N);
+X       break;
+X    case 'x':
+X       printf("%s: unspecified algorithm\n",argv[0]);
+X       msg(argv[0]);
+X       exit(1);
+X    default:
+X       printf("%s: unknown algorithm choice %c\n",argv[0],alg_choice);
+X       msg(argv[0]);
+X       exit(1);
+X  }
+X
+X/* set coefficients so that result matrix should have row entries
+X * equal to (1/2)*n*(n-1)*i in row i
+X */
+X  for (i=0;i<N;i++){
+X    for (j=0;j<N;j++){
+X       a[i][j] = b[i][j] = (double) i;
+X    }
+X  }
+X
+X/* try to flush cache */
+X  for(i=0;i<N;i++){
+X    for (j=0;j<N;j++){
+X       d[i][j] = 0.0;
+X    }
+X  }
+X
+X  switch(alg_choice){
+X    case 'n':
+X       t_start = dtime();
+X       normal();
+X       t_end = dtime();
+X       printf(" utime %10.2f secs\n",t_end-t_start);
+X       break;
+X    case 'v':
+X       t_start = dtime();
+X       tnsq();
+X       t_end = dtime();
+X       printf(" utime %10.2f secs\n",t_end-t_start);
+X       break;
+X    case 'u':
+X       switch(parm){
+X       case 4:
+X	 t_start = dtime();
+X	 unroll4();
+X	 t_end = dtime();
+X	 break;   
+X       case 8:
+X	 t_start = dtime();
+X	 unroll8();
+X	 t_end = dtime();
+X	 break;   
+X       case 16:
+X	 t_start = dtime();
+X	 unroll16();
+X	 t_end = dtime();
+X	 break;   
+X       default:
+X	 printf("program logic bug in call to unrolled versions\n");
+X	 exit(1);
+X       }
+X       printf(" utime %10.2f secs\n",t_end-t_start);
+X       break;
+X    case 'p':
+X       t_start = dtime();
+X       pnsq();
+X       t_end = dtime();
+X       printf(" utime %10.2f secs\n",t_end-t_start);
+X       break;
+X    case 't':
+X       t_start = dtime();
+X       transpose();
+X       t_end = dtime();
+X       printf(" utime %10.2f secs\n",t_end-t_start);
+X       break;
+X    case 'i':
+X       t_start = dtime();
+X       reg_loops();
+X       t_end = dtime();
+X       printf(" utime %10.2f secs\n",t_end-t_start);
+X       break;
+X    case 'b':
+X       t_start = dtime();
+X       tiling(parm);
+X       t_end = dtime();
+X       printf(" utime %10.2f secs\n",t_end-t_start);
+X       break;
+X    case 'm':
+X       t_start = dtime();
+X       maeno(parm);
+X       t_end = dtime();
+X       printf(" utime %10.2f secs\n",t_end-t_start);
+X       break;
+X    case 'w':
+X       t_start = dtime();
+X       warner(parm);
+X       t_end = dtime();
+X       printf(" utime %10.2f secs\n",t_end-t_start);
+X       break;
+X    case 'r':
+X       t_start = dtime();
+X       robert();
+X       t_end = dtime();
+X       printf(" utime %10.2f secs\n",t_end-t_start);
+X       break;
+X    default:
+X       printf("unknown algorithm!\n");
+X       exit(1);
+X  }
+X
+X/* check result */
+X  sum = 0.5*((double)(N*(N-1)));
+X  for (i=0;i<N;i++){
+X    row_sum = ((double)i)*sum;
+X    for (j=0;j<N;j++){
+X       if (c[i][j]!=row_sum){
+X       printf("error in result entry c[%d][%d]: %e != %e\n",
+X		i,j,c[i][j],row_sum);
+X       exit(1);
+X       }
+X       if (a[i][j]!=((double)i)){
+X       printf("error in entry a[%d][%d]: %e != %d\n",
+X		i,j,a[i][j],i);
+X       exit(1);
+X       }
+X       if (b[i][j]!=((double)i)){
+X       printf("error in entry b[%d][%d]: %e != %d\n",
+X		i,j,b[i][j],i);
+X       exit(1);
+X       }
+X    }
+X  }
+X}
+X
+Xvoid msg(cmd)
+Xchar *cmd;
+X{
+X  printf("  usage: %s -<option> [<n>]\n",cmd);
+X  printf("  option n - normal matrix multiply\n");
+X  printf("  option v - normal matrix multiply using temp variable\n");
+X  printf("  option u - innermost loop unrolled by factor of n=4,8,16\n");
+X  printf("  option p - matrix multiply using pointers\n");
+X  printf("  option t - matrix multiply using transpose of b matrix\n");
+X  printf("  option i - matrix multiply with interchanged loops\n");
+X  printf("  option b - matrix multiply using blocking with step=n\n");
+X  printf("  option m - matrix multiply using Maeno method of blocking,\n");
+X  printf("             n specifies size of subarray (divisible by 4)\n");
+X  printf("  option w - matrix multiply using Warner method of blocking,\n");
+X  printf("             n specifies size of subarray (divisible by 2)\n");
+X  printf("  option r - matrix multiply using the Robert method with:\n");
+X  printf("             b transpose, pointers, and temporary variables\n");
+X}
+X
+Xvoid normal(){
+X    int i,j,k;
+X    for (i=0;i<N;i++){
+X       for (j=0;j<N;j++){
+X	   c[i][j] = 0.0;
+X	   for (k=0;k<N;k++){
+X	       c[i][j] += a[i][k]*b[k][j];
+X	   }
+X       }
+X    }
+X}
+X
+Xvoid tnsq(){
+X    int i,j,k;
+X    double temp;
+X    for (i=0;i<N;i++){
+X       for (j=0;j<N;j++){
+X	   temp = a[i][0]*b[0][j];
+X	   for (k=1;k<N;k++){
+X	       temp += a[i][k]*b[k][j];
+X	   }
+X	   c[i][j] = temp;
+X       }
+X    }
+X}
+X
+Xvoid unroll4(){
+X    int i,j,k;
+X    double temp;
+X    for (i=0;i<N;i++){
+X       for (j=0;j<N;j++){
+X	   temp = 0.0;
+X	   for (k=0;k<(N-3);k+=4){
+X	       temp += a[i][k]*b[k][j];
+X	       temp += a[i][k+1]*b[k+1][j];
+X	       temp += a[i][k+2]*b[k+2][j];
+X	       temp += a[i][k+3]*b[k+3][j];
+X	   }
+X	   for (;k<N;k++){
+X	       temp += a[i][k]*b[k][j];
+X	   }
+X	   c[i][j] = temp;
+X       }
+X    }
+X}
+X
+Xvoid unroll8(){
+X    int i,j,k;
+X    double temp;
+X    for (i=0;i<N;i++){
+X       for (j=0;j<N;j++){
+X	   temp = 0.0;
+X	   for (k=0;k<(N-7);k+=8){
+X	       temp += a[i][k]*b[k][j];
+X	       temp += a[i][k+1]*b[k+1][j];
+X	       temp += a[i][k+2]*b[k+2][j];
+X	       temp += a[i][k+3]*b[k+3][j];
+X	       temp += a[i][k+4]*b[k+4][j];
+X	       temp += a[i][k+5]*b[k+5][j];
+X	       temp += a[i][k+6]*b[k+6][j];
+X	       temp += a[i][k+7]*b[k+7][j];
+X	   }
+X	   for (;k<N;k++){
+X	       temp += a[i][k]*b[k][j];
+X	   }
+X	   c[i][j] = temp;
+X       }
+X    }
+X}
+X
+Xvoid unroll16(){
+X    int i,j,k;
+X    double temp;
+X    for (i=0;i<N;i++){
+X       for (j=0;j<N;j++){
+X	   temp = 0.0;
+X	   for (k=0;k<(N-15);k+=16){
+X	       temp += a[i][k]*b[k][j];
+X	       temp += a[i][k+1]*b[k+1][j];
+X	       temp += a[i][k+2]*b[k+2][j];
+X	       temp += a[i][k+3]*b[k+3][j];
+X	       temp += a[i][k+4]*b[k+4][j];
+X	       temp += a[i][k+5]*b[k+5][j];
+X	       temp += a[i][k+6]*b[k+6][j];
+X	       temp += a[i][k+7]*b[k+7][j];
+X	       temp += a[i][k+8]*b[k+8][j];
+X	       temp += a[i][k+9]*b[k+9][j];
+X	       temp += a[i][k+10]*b[k+10][j];
+X	       temp += a[i][k+11]*b[k+11][j];
+X	       temp += a[i][k+12]*b[k+12][j];
+X	       temp += a[i][k+13]*b[k+13][j];
+X	       temp += a[i][k+14]*b[k+14][j];
+X	       temp += a[i][k+15]*b[k+15][j];
+X	   }
+X	   for (;k<N;k++){
+X	       temp += a[i][k]*b[k][j];
+X	   }
+X	   c[i][j] = temp;
+X       }
+X    }
+X}
+X
+Xvoid pnsq(){
+X    int i,j,k;
+X    double temp,*pa,*pb;
+X    for (i=0;i<N;i++){
+X       for (j=0;j<N;j++){
+X	   pa = a[i];
+X	   pb = &b[0][j];
+X	   temp = (*pa++)*(*pb);
+X	   for (k=1;k<N;k++){
+X	       pb = pb + N;
+X	       temp += (*pa++)*(*pb);
+X	   }
+X	   c[i][j] = temp;
+X       }
+X    }
+X}
+X
+Xvoid transpose(){
+X    int i,j,k;
+X    double temp;
+X    for (i=0;i<N;i++){
+X       for (j=0;j<N;j++){
+X	   bt[j][i] = b[i][j];
+X       }
+X    }
+X    for (i=0;i<N;i++){
+X       for (j=0;j<N;j++){
+X	   temp = a[i][0]*bt[j][0];
+X	   for (k=1;k<N;k++){
+X	       temp += a[i][k]*bt[j][k];
+X	   }
+X	   c[i][j] = temp;
+X       }
+X    }
+X}
+X
+X/* from Monica Lam ASPLOS-IV paper */
+Xvoid reg_loops(){
+X    int i,j,k;
+X    register double a_entry;
+X    for (i=0;i<N;i++){
+X       for (j=0;j<N;j++){
+X	   c[i][j] = 0.0;
+X       }
+X    }
+X    for (i=0;i<N;i++){
+X       for (k=0;k<N;k++){
+X	   a_entry = a[i][k];
+X	   for (j=0;j<N;j++){
+X	       c[i][j] += a_entry*b[k][j];
+X	   }
+X       }
+X    }
+X}
+X
+X/* from Monica Lam ASPLOS-IV paper */
+X#define min(a,b) ((a)<=(b)?(a):(b))
+Xvoid tiling(step)
+Xint step;
+X{
+X    int i,j,k,jj,kk;
+X    register double a_entry;
+X    for (i=0;i<N;i++){
+X       for (j=0;j<N;j++){
+X	   c[i][j] = 0.0;
+X       }
+X    }
+X    for(kk=0;kk<N;kk+=step){
+X       for(jj=0;jj<N;jj+=step){
+X	   for (i=0;i<N;i++){
+X	       for(k=kk;k<min(kk+step,N);k++){
+X		   a_entry = a[i][k];
+X		   for(j=jj;j<min(jj+step,N);j++){
+X		       c[i][j] += a_entry*b[k][j];
+X		   }
+X		}
+X	   }
+X       }
+X    }
+X}
+X
+X
+X/* Matrix Multiply tuned for SS-10/30;
+X *                      Maeno Toshinori
+X *                      Tokyo Institute of Technology
+X *
+X * Using gcc-2.4.1 (-O2), this program ends in 12 seconds on SS-10/30. 
+X *
+X * in original algorithm - sub-area for cache tiling
+X * #define      L       20
+X * #define      L2      20
+X * three 20x20 matrices reside in cache; two may be enough
+X */
+X
+Xvoid maeno(lparm)
+Xint lparm;
+X{
+Xint i,j,k,kk,i2,r,kt,it;
+Xdouble t0,t1,t2,t3,s,t4,t5,t6,t7;
+X       for(i=0;i<N;i++)
+X	 for(j=0;j<N;j++) {
+X	       c[i][j]=0.0;
+X	       }
+X
+X       for (i2=0; i2<N; i2+=lparm)
+X	 for (kk=0; kk<N; kk+=lparm) {
+X	   it=i2+lparm;
+X	   kt=kk+lparm;
+X	       for (j=0; j<N; j+=4) 
+X	       for(i=i2;i<it;i+=2) {
+X		       t0=t1=t2=t3=0.0;
+X		       t4=t5=t6=t7=0.0;
+X		       for(k=kk; k<kt; k++) {
+X			       s=a[i][k];
+X			       t0 += s*b[k][j];
+X			       t1 += s*b[k][j+1];
+X			       t2 += s*b[k][j+2];
+X			       t3 += s*b[k][j+3];
+X			       s=a[i+1][k];
+X			       t4 += s*b[k][j];
+X			       t5 += s*b[k][j+1];
+X			       t6 += s*b[k][j+2];
+X			       t7 += s*b[k][j+3];
+X		       }
+X		       c[i][j]+=t0;
+X		       c[i][j+1]+=t1;
+X		       c[i][j+2]+=t2;
+X		       c[i][j+3]+=t3;
+X		       c[i+1][j]+=t4;
+X		       c[i+1][j+1]+=t5;
+X		       c[i+1][j+2]+=t6;
+X		       c[i+1][j+3]+=t7;
+X	       }
+X       }
+X}       
+X
+X
+Xvoid warner(nb)
+Xint nb;
+X{
+X       int i,j,k;
+X       int ii,jj,kk;
+X       double s00,s01,s10,s11;
+X/*
+X * Matrix Multiply by Dan Warner, Dept. of Mathematics, Clemson University
+X *
+X *    mmbu2.f multiplies matrices a and b
+X *    a and b are n by n matrices
+X *    nb is the blocking parameter.
+X *    the tuning guide indicates nb = 50 is reasonable for the
+X *    ibm model 530 hence 25 should be reasonable for the 320 
+X *    since the 320 has 32k rather than 64k of cache.      
+X *    Inner loops unrolled to depth of 2
+X *    The loop functions without clean up code at the end only
+X *    if the unrolling occurs to a depth k which divides into n
+X *    in this case n must be divisible by 2.
+X *    The blocking parameter nb must divide into n if the
+X *    multiply is to succeed without clean up code at the end. 
+X *
+X * converted to c by Mark Smotherman
+X * note that nb must also be divisible by 2 => cannot use 25, so use 20
+X */
+X
+X       for( ii = 0; ii < N; ii += nb ){
+X	 for( jj = 0; jj < N; jj += nb ){
+X	   for( i = ii; i < ii + nb ; i++ ){
+X	       for( j = jj; j < jj + nb ; j++ ){
+X	       c[i][j] = 0.0;
+X	       }
+X	   }
+X	   for( kk = 0; kk < N; kk += nb ){
+X	       for( i = ii; i < ii + nb ; i += 2 ){
+X	       for( j = jj; j < jj + nb ; j += 2 ){
+X		 s00 = c[i  ][j  ];
+X		 s01 = c[i  ][j+1];
+X		 s10 = c[i+1][j  ];
+X		 s11 = c[i+1][j+1];
+X		 for( k = kk; k < kk + nb ; k++ ){
+X		   s00 = s00 + a[i  ][k]*b[k][j  ];
+X		   s01 = s01 + a[i  ][k]*b[k][j+1];
+X		   s10 = s10 + a[i+1][k]*b[k][j  ];
+X		   s11 = s11 + a[i+1][k]*b[k][j+1];
+X		 }
+X		 c[i  ][j  ] = s00;
+X		 c[i  ][j+1] = s01;
+X		 c[i+1][j  ] = s10;
+X		 c[i+1][j+1] = s11;
+X	       }
+X	       }
+X	   }
+X	 }
+X       }
+X}
+X
+X/********************************************/
+X/* Contributed by Robert Debath 26 Nov 1995 */
+X/* rdebath@cix.compulink.co.uk              */
+X/********************************************/
+Xvoid robert(void)
+X{
+X int i,j,k;
+X double temp, *pa, *pb;
+X for (i = 0;i < N; i++)
+X    {
+X     for (j = 0;j < N; j++)
+X	 {
+X	  bt[j][i] = b[i][j];
+X	 }
+X    }
+X
+X for (i = 0; i < N; i++)
+X    {
+X     for (j = 0; j < N; j++)
+X	 {
+X	  pa = &a[i][0];
+X	  pb = &bt[j][0];
+X	  temp = (*pa++) * (*pb++);
+X	  
+X	  for (k = 1; k < N; k++)
+X	       {
+X		temp += (*pa++) * (*pb++);
+X	       }
+X	  c[i][j] = temp;
+X	 }
+X    }
+X}
+X
+X/*****************************************************/
+X/* Various timer routines.                           */
+X/* Al Aburto, aburto@nosc.mil, 18 Feb 1997           */
+X/*                                                   */
+X/* t = dtime() outputs the current time in seconds.  */
+X/* Use CAUTION as some of these routines will mess   */
+X/* up when timing across the hour mark!!!            */
+X/*                                                   */
+X/* For timing I use the 'user' time whenever         */
+X/* possible. Using 'user+sys' time is a separate     */
+X/* issue.                                            */
+X/*                                                   */
+X/* Example Usage:                                    */
+X/* [timer options added here]                        */
+X/* main()                                            */
+X/* {                                                 */
+X/* double starttime,benchtime,dtime();               */
+X/*                                                   */
+X/* starttime = dtime();                              */ 
+X/* [routine to time]                                 */
+X/* benchtime = dtime() - starttime;                  */
+X/* }                                                 */
+X/*                                                   */
+X/* [timer code below added here]                     */
+X/*****************************************************/
+X
+X/*********************************/
+X/* Timer code.                   */
+X/*********************************/
+X/*******************/
+X/*  Amiga dtime()  */
+X/*******************/
+X#ifdef Amiga
+X#include <ctype.h>
+X#define HZ 50
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X struct tt
+X       {
+X	long  days;
+X	long  minutes;
+X	long  ticks;
+X       } tt;
+X
+X DateStamp(&tt);
+X
+X q = ((double)(tt.ticks + (tt.minutes * 60L * 50L))) / (double)HZ;
+X
+X return q;
+X}
+X#endif
+X
+X/*****************************************************/
+X/*  UNIX dtime(). This is the preferred UNIX timer.  */
+X/*  Provided by: Markku Kolkka, mk59200@cc.tut.fi    */
+X/*  HP-UX Addition by: Bo Thide', bt@irfu.se         */
+X/*****************************************************/
+X#ifdef UNIX
+X#include <sys/time.h>
+X#include <sys/resource.h>
+X
+X#ifdef hpux
+X#include <sys/syscall.h>
+X#define getrusage(a,b) syscall(SYS_getrusage,a,b)
+X#endif
+X
+Xstruct rusage rusage;
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X getrusage(RUSAGE_SELF,&rusage);
+X
+X q = (double)(rusage.ru_utime.tv_sec);
+X q = q + (double)(rusage.ru_utime.tv_usec) * 1.0e-06;
+X	
+X return q;
+X}
+X#endif
+X
+X/***************************************************/
+X/*  UNIX_Old dtime(). This is the old UNIX timer.  */
+X/*  Make sure HZ is properly defined in param.h !! */
+X/***************************************************/
+X#ifdef UNIX_Old
+X#include <sys/types.h>
+X#include <sys/times.h>
+X#include <sys/param.h>
+X
+X#ifndef HZ
+X#define HZ 60
+X#endif
+X
+Xstruct tms tms;
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X times(&tms);
+X
+X q = (double)(tms.tms_utime) / (double)HZ;
+X	
+X return q;
+X}
+X#endif
+X
+X/*********************************************************/
+X/*  VMS dtime() for VMS systems.                         */
+X/*  Provided by: RAMO@uvphys.phys.UVic.CA                */
+X/*  Some people have run into problems with this timer.  */
+X/*********************************************************/
+X#ifdef VMS
+X#include time
+X
+X#ifndef HZ
+X#define HZ 100
+X#endif
+X
+Xstruct tbuffer_t
+X      {
+X       int proc_user_time;
+X       int proc_system_time;
+X       int child_user_time;
+X       int child_system_time;
+X      };
+X
+Xstruct tbuffer_t tms;
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X times(&tms);
+X
+X q = (double)(tms.proc_user_time) / (double)HZ;
+X	
+X return q;
+X}
+X#endif
+X
+X/******************************/
+X/*  BORLAND C dtime() for DOS */
+X/******************************/
+X#ifdef BORLAND_C
+X#include <ctype.h>
+X#include <dos.h>
+X#include <time.h>
+X
+X#define HZ 100
+Xstruct time tnow;
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X gettime(&tnow);
+X
+X q = 60.0 * (double)(tnow.ti_min);
+X q = q + (double)(tnow.ti_sec);
+X q = q + (double)(tnow.ti_hund)/(double)HZ;
+X	
+X return q;
+X}
+X#endif
+X
+X/**************************************/
+X/*  Microsoft C (MSC) dtime() for DOS */
+X/**************************************/
+X#ifdef MSC
+X#include <time.h>
+X#include <ctype.h>
+X
+X#define HZ CLOCKS_PER_SEC
+Xclock_t tnow;
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X tnow = clock();
+X
+X q = (double)tnow / (double)HZ;
+X	
+X return q;
+X}
+X#endif
+X
+X/*************************************/
+X/*  Macintosh (MAC) Think C dtime()  */
+X/*************************************/
+X#ifdef MAC
+X#include <time.h>
+X
+X#define HZ 60
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X q = (double)clock() / (double)HZ;
+X	
+X return q;
+X}
+X#endif
+X
+X/************************************************************/
+X/*  iPSC/860 (IPSC) dtime() for i860.                       */
+X/*  Provided by: Dan Yergeau, yergeau@gloworm.Stanford.EDU  */
+X/************************************************************/
+X#ifdef IPSC
+Xextern double dclock();
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X q = dclock();
+X	
+X return q;
+X}
+X#endif
+X
+X/**************************************************/
+X/*  FORTRAN dtime() for Cray type systems.        */
+X/*  This is the preferred timer for Cray systems. */
+X/**************************************************/
+X#ifdef FORTRAN_SEC
+X
+Xfortran double second();
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X second(&q);
+X	
+X return q;
+X}
+X#endif
+X
+X/***********************************************************/
+X/*  UNICOS C dtime() for Cray UNICOS systems.  Don't use   */
+X/*  unless absolutely necessary as returned time includes  */
+X/*  'user+system' time.  Provided by: R. Mike Dority,      */
+X/*  dority@craysea.cray.com                                */
+X/***********************************************************/
+X#ifdef CTimer
+X#include <time.h>
+X
+Xdouble dtime()
+X{
+X double    q;
+X clock_t   clock(void);
+X
+X q = (double)clock() / (double)CLOCKS_PER_SEC;
+X
+X return q;
+X}
+X#endif
+X
+X/********************************************/
+X/* Another UNIX timer using gettimeofday(). */
+X/* However, getrusage() is preferred.       */
+X/********************************************/
+X#ifdef GTODay
+X#include <sys/time.h>
+X
+Xstruct timeval tnow;
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X gettimeofday(&tnow,NULL);
+X q = (double)tnow.tv_sec + (double)tnow.tv_usec * 1.0e-6;
+X
+X return q;
+X}
+X#endif
+X
+X/*****************************************************/
+X/*  Fujitsu UXP/M timer.                             */
+X/*  Provided by: Mathew Lim, ANUSF, M.Lim@anu.edu.au */
+X/*****************************************************/
+X#ifdef UXPM
+X#include <sys/types.h>
+X#include <sys/timesu.h>
+Xstruct tmsu rusage;
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X timesu(&rusage);
+X
+X q = (double)(rusage.tms_utime) * 1.0e-06;
+X	
+X return q;
+X}
+X#endif
+X
+X/**********************************************/
+X/*    Macintosh (MAC_TMgr) Think C dtime()    */
+X/*   requires Think C Language Extensions or  */
+X/*    #include <MacHeaders> in the prefix     */
+X/*  provided by Francis H Schiffer 3rd (fhs)  */
+X/*         skipschiffer@genie.geis.com        */
+X/**********************************************/
+X#ifdef MAC_TMgr
+X#include <Timer.h>
+X#include <stdlib.h>
+X
+Xstatic TMTask   mgrTimer;
+Xstatic Boolean  mgrInited = false;
+Xstatic double   mgrClock;
+X
+X#define RMV_TIMER RmvTime( (QElemPtr)&mgrTimer )
+X#define MAX_TIME  1800000000L
+X/* MAX_TIME limits time between calls to */
+X/* dtime( ) to no more than 30 minutes   */
+X/* this limitation could be removed by   */
+X/* creating a completion routine to sum  */
+X/* 30 minute segments (fhs 1994 feb 9)   */
+X
+Xstatic void Remove_timer( )
+X{
+X RMV_TIMER;
+X mgrInited = false;
+X}
+X
+Xdouble  dtime( )
+X{
+X if( mgrInited ) {
+X   RMV_TIMER;
+X   mgrClock += (MAX_TIME + mgrTimer.tmCount)*1.0e-6;
+X } else {
+X   if( _atexit( &Remove_timer ) == 0 ) mgrInited = true;
+X   mgrClock = 0.0;
+X }
+X 
+X if ( mgrInited )
+X   {
+X    mgrTimer.tmAddr = NULL;
+X    mgrTimer.tmCount = 0;
+X    mgrTimer.tmWakeUp = 0;
+X    mgrTimer.tmReserved = 0;
+X    InsTime( (QElemPtr)&mgrTimer );
+X    PrimeTime( (QElemPtr)&mgrTimer, -MAX_TIME );
+X   }
+X return( mgrClock );
+X}
+X#endif
+X
+X/***********************************************************/
+X/*  Parsytec GCel timer.                                   */
+X/*  Provided by: Georg Wambach, gw@informatik.uni-koeln.de */
+X/***********************************************************/
+X#ifdef PARIX
+X#include <sys/time.h>
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X q = (double) (TimeNowHigh()) / (double) CLK_TCK_HIGH;
+X
+X return q;
+X}
+X#endif
+X
+X/************************************************/
+X/*  Sun Solaris POSIX dtime() routine           */
+X/*  Provided by: Case Larsen, CTLarsen.lbl.gov  */
+X/************************************************/
+X#ifdef POSIX
+X#include <sys/time.h>
+X#include <sys/resource.h>
+X#include <sys/rusage.h>
+X
+X#ifdef __hpux
+X#include <sys/syscall.h>
+X#endif
+X
+Xstruct rusage rusage;
+X
+Xdouble dtime()
+X{
+X double q;
+X
+X getrusage(RUSAGE_SELF,&rusage);
+X
+X q = (double)(rusage.ru_utime.tv_sec);
+X q = q + (double)(rusage.ru_utime.tv_nsec) * 1.0e-09;
+X	
+X return q;
+X}
+X#endif
+X
+X
+X/****************************************************/
+X/*  Windows NT (32 bit) dtime() routine             */
+X/*  Provided by: Piers Haken, piersh@microsoft.com  */
+X/****************************************************/
+X#ifdef WIN32
+X#include <windows.h>
+X
+Xdouble dtime(void)
+X{
+X double q;
+X
+X q = (double)GetTickCount() * 1.0e-03;
+X	
+X return q;
+X}
+X#endif
+X
+X/*****************************************************/
+X/* Time according to POSIX.1  -  <J.Pelan@qub.ac.uk> */
+X/* Ref: "POSIX Programmer's Guide"  O'Reilly & Assoc.*/
+X/*****************************************************/
+X#ifdef POSIX1
+X#define _POSIX_SOURCE 1
+X#include <unistd.h>
+X#include <limits.h>
+X#include <sys/times.h>
+X
+Xstruct tms tms;
+X
+Xdouble dtime()
+X{
+X double q;
+X times(&tms);
+X q = (double)tms.tms_utime / (double)CLK_TCK;
+X return q;
+X}
+X#endif
+X
+X/*-------- End of mm.c, say goodnight Becky! (Sep 1992) --------*/
+END_OF_FILE
+if test 27748 -ne `wc -c <'mm.c'`; then
+    echo shar: \"'mm.c'\" unpacked with wrong size!
+fi
+# end of 'mm.c'
+fi
+if test -f 'mm.bat' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'mm.bat'\"
+else
+echo shar: Extracting \"'mm.bat'\" \(380 characters\)
+sed "s/^X//" >'mm.bat' <<'END_OF_FILE'
+Xecho "#############################################" >> mm.res
+Xecho "System:   " >> mm.res
+Xecho "Compiler: " >> mm.res
+Xgcc -DUNIX -DN=500 -O3 mm.c -o mm
+Xstrip mm
+Xecho "--- done compiling and stripping ---"
+Xmm -n >> mm.res
+Xmm -u 8 >> mm.res
+Xmm -t >> mm.res
+Xmm -b 32 >> mm.res
+Xmm -m 20 >> mm.res
+Xmm -p >> mm.res
+Xmm -v >> mm.res
+Xmm -i >> mm.res
+Xmm -w 50 >> mm.res
+Xmm -w 20 >> mm.res
+END_OF_FILE
+if test 380 -ne `wc -c <'mm.bat'`; then
+    echo shar: \"'mm.bat'\" unpacked with wrong size!
+fi
+# end of 'mm.bat'
+fi
+if test -f 'mm.res' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'mm.res'\"
+else
+echo shar: Extracting \"'mm.res'\" \(5193 characters\)
+sed "s/^X//" >'mm.res' <<'END_OF_FILE'
+X##########################################################################
+XThese are results for the DATEL Pentium P5-90:
+XEISA/PCI, 24 MBytes RAM, 512K Cache
+Xgcc 2.5.4, gcc -DGTODay -DN=500 -O2 mm.c -o mm
+X
+X500x500 mm - normal algorithm                     utime     113.15 secs
+X500x500 mm - unrolled inner loop, factor of  8    utime     108.54 secs
+X500x500 mm - transposed b matrix                  utime      25.10 secs
+X500x500 mm - blocking, factor of  32              utime      36.08 secs
+X500x500 mm -  20x 20 subarray (from T. Maeno)     utime      14.61 secs
+X500x500 mm - pointers used to access matrices     utime     107.10 secs
+X500x500 mm - temporary variable in loop           utime     108.21 secs
+X500x500 mm - interchanged inner loops             utime      28.01 secs
+X500x500 mm -  50x 50 subarray (from D. Warner)    utime      18.07 secs
+X500x500 mm -  20x 20 subarray (from D. Warner)    utime      14.72 secs
+X
+X##########################################################################
+XSun HyperSPARC, 100 MHz,
+Xgcc -DMSC -DN=500 -O3 -msupersparc mm.c -o mm
+X
+X500x500 mm - normal algorithm                     utime      61.95 secs
+X500x500 mm - unrolled inner loop, factor of  8    utime      52.21 secs
+X500x500 mm - transposed b matrix                  utime      22.45 secs
+X500x500 mm - blocking, factor of  32              utime      18.29 secs
+X500x500 mm -  20x 20 subarray (from T. Maeno)     utime       5.76 secs
+X500x500 mm - pointers used to access matrices     utime      55.75 secs
+X500x500 mm - temporary variable in loop           utime      55.76 secs
+X500x500 mm - interchanged inner loops             utime      22.06 secs
+X500x500 mm -  50x 50 subarray (from D. Warner)    utime       5.59 secs
+X500x500 mm -  20x 20 subarray (from D. Warner)    utime       6.28 secs
+X
+X##########################################################################
+XSun HyperSPARC, 100 MHz,
+Xgcc 2.7.1, gcc -DMSC -DN=500 -O3
+X
+X500x500 mm - normal algorithm                     utime      61.98 secs
+X500x500 mm - unrolled inner loop, factor of  8    utime      51.62 secs
+X500x500 mm - transposed b matrix                  utime      22.44 secs
+X500x500 mm - blocking, factor of  32              utime      19.51 secs
+X500x500 mm -  20x 20 subarray (from T. Maeno)     utime       5.64 secs
+X500x500 mm - pointers used to access matrices     utime      55.76 secs
+X500x500 mm - temporary variable in loop           utime      55.75 secs
+X500x500 mm - interchanged inner loops             utime      23.35 secs
+X500x500 mm -  50x 50 subarray (from D. Warner)    utime       5.24 secs
+X500x500 mm -  20x 20 subarray (from D. Warner)    utime       5.96 secs
+X
+X##########################################################################
+XHyperSPARC, 100 MHz, SunOS 5.4
+Xgcc 2.7.1 -DMSC -DN=500 -msupersparc -O2
+X500x500 mm - normal algorithm                     utime      61.72 secs
+X500x500 mm - unrolled inner loop, factor of  8    utime      51.95 secs
+X500x500 mm - transposed b matrix                  utime      22.01 secs
+X500x500 mm - blocking, factor of  32              utime      18.10 secs
+X500x500 mm -  20x 20 subarray (from T. Maeno)     utime       5.62 secs
+X500x500 mm - pointers used to access matrices     utime      55.41 secs
+X500x500 mm - temporary variable in loop           utime      55.46 secs
+X500x500 mm - interchanged inner loops             utime      21.91 secs
+X500x500 mm -  50x 50 subarray (from D. Warner)    utime       5.46 secs
+X500x500 mm -  20x 20 subarray (from D. Warner)    utime       6.10 secs
+X##############################
+XSun SuperSPARC, 50 MHz
+Xgcc 2.6.3 -DUNIX_Old -DN=500 -msupersparc -O2
+X500x500 mm - normal algorithm                     utime      94.18 secs
+X500x500 mm - unrolled inner loop, factor of  8    utime      75.42 secs
+X500x500 mm - transposed b matrix                  utime      37.22 secs
+X500x500 mm - blocking, factor of  32              utime      46.63 secs
+X500x500 mm -  20x 20 subarray (from T. Maeno)     utime      11.97 secs
+X500x500 mm - pointers used to access matrices     utime      80.63 secs
+X500x500 mm - temporary variable in loop           utime      79.80 secs
+X500x500 mm - interchanged inner loops             utime      38.05 secs
+X500x500 mm -  50x 50 subarray (from D. Warner)    utime      14.43 secs
+X500x500 mm -  20x 20 subarray (from D. Warner)    utime      16.65 secs
+X#############################################
+XSystem:   
+XCompiler: 
+X#############################################
+XSystem:   
+XCompiler: 
+X500x500 mm - normal algorithm                     utime      93.23 secs
+X500x500 mm - unrolled inner loop, factor of  8    utime      63.88 secs
+X500x500 mm - transposed b matrix                  utime      38.11 secs
+X500x500 mm - blocking, factor of  32              utime      43.51 secs
+X500x500 mm -  20x 20 subarray (from T. Maeno)     utime      16.86 secs
+X500x500 mm - pointers used to access matrices     utime      67.50 secs
+X500x500 mm - temporary variable in loop           utime      67.58 secs
+X500x500 mm - interchanged inner loops             utime      66.88 secs
+X500x500 mm -  50x 50 subarray (from D. Warner)    utime      19.06 secs
+X500x500 mm -  20x 20 subarray (from D. Warner)    utime      17.41 secs
+END_OF_FILE
+if test 5193 -ne `wc -c <'mm.res'`; then
+    echo shar: \"'mm.res'\" unpacked with wrong size!
+fi
+# end of 'mm.res'
+fi
+echo shar: End of shell archive.
+exit 0

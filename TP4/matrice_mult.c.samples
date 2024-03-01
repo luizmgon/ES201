@@ -1,0 +1,69 @@
+
+void normal(){
+    int i,j,k;
+    for (i=0;i<N;i++){
+       for (j=0;j<N;j++){
+	   c[i][j] = 0.0;
+	   for (k=0;k<N;k++){
+	       c[i][j] += a[i][k]*b[k][j];
+	   }
+       }
+    }
+}
+
+
+
+void pnsq(){
+    int i,j,k;
+    double temp,*pa,*pb;
+    for (i=0;i<N;i++){
+       for (j=0;j<N;j++){
+	   pa = a[i];
+	   pb = &b[0][j];
+	   temp = (*pa++)*(*pb);
+	   for (k=1;k<N;k++){
+	       pb = pb + N;
+	       temp += (*pa++)*(*pb);
+	   }
+	   c[i][j] = temp;
+       }
+    }
+}
+
+
+
+void tnsq(){
+    int i,j,k;
+    double temp;
+    for (i=0;i<N;i++){
+       for (j=0;j<N;j++){
+	   temp = a[i][0]*b[0][j];
+	   for (k=1;k<N;k++){
+	       temp += a[i][k]*b[k][j];
+	   }
+	   c[i][j] = temp;
+       }
+    }
+}
+
+void unroll4(){
+    int i,j,k;
+    double temp;
+    for (i=0;i<N;i++){
+       for (j=0;j<N;j++){
+	   temp = 0.0;
+	   for (k=0;k<(N-3);k+=4){
+	       temp += a[i][k]*b[k][j];
+	       temp += a[i][k+1]*b[k+1][j];
+	       temp += a[i][k+2]*b[k+2][j];
+	       temp += a[i][k+3]*b[k+3][j];
+	   }
+	   for (;k<N;k++){
+	       temp += a[i][k]*b[k][j];
+	   }
+	   c[i][j] = temp;
+       }
+    }
+}
+
+

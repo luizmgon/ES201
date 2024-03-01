@@ -1,0 +1,14 @@
+all:  dijkstra_large dijkstra_small dijkstra_large.ss dijkstra_small.ss
+
+dijkstra_large: dijkstra_large.c Makefile
+	gcc -static dijkstra_large.c -O3 -o dijkstra_large
+
+dijkstra_large.ss: dijkstra_large.c Makefile
+	sslittle-na-sstrix-gcc dijkstra_large.c -o dijkstra_large.ss
+
+dijkstra_small: dijkstra_small.c Makefile
+	gcc -static dijkstra_small.c -O3 -o dijkstra_small
+dijkstra_small.ss: dijkstra_small Makefile
+	sslittle-na-sstrix-gcc dijkstra_small.c -o dijkstra_small.ss
+clean:
+	rm -rf dijkstra_large dijkstra_small output*

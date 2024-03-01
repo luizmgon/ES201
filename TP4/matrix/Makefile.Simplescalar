@@ -1,0 +1,67 @@
+#Le shell dans lequel a ete teste ce script est le /bin/bash
+#Pour savoir si vous utlisez bien celui-ci, tapez "echo $SHELL"
+#Si vous utiliser un autre shell, tapez "bash"
+
+SIMDIR=/usr/ensta/i386-linux/pack/simplescalar-2.0/simplescalar-4.0/mase
+RESDIR=/home/h91/eleve/2004/nom-eleve/ES201/TP1/Results
+
+# mettre dans RESDIR le chemin vers le repertoire resultats
+
+
+#remplacer les ?? par les valeurs que avez calculé dans le tableau1
+C1="-cache:il1 il1:??:64:2:l -cache:dl1 dl1:??:64:2:l -cache:dl2 dl2:??:64:16:l -cache:il2 dl2"
+C2="-cache:il1 il1:??:32:2:l -cache:dl1 dl1:??:32:2:l -cache:dl2 dl2:??:32:8:l -cache:il2 dl2"
+C3="-cache:il1 il1:??:64:2:l -cache:dl1 dl1:??:64:2:l -cache:dl2 dl2:??:64:16:l -cache:il2 dl2"
+C4="-cache:il1 il1:??:32:2:l -cache:dl1 dl1:??:32:2:l -cache:dl2 dl2:??:32:8:l -cache:il2 dl2"
+C5="-cache:il1 il1:??:32:1:l -cache:dl1 dl1:??:32:8:l -cache:dl2 dl2:??:32:4:l -cache:il2 dl2"
+C6="-cache:il1 il1:??:32:1:l -cache:dl1 dl1:??:32:1:l -cache:dl2 dl2:??:32:1:l -cache:il2 dl2"
+
+#Différents tests à effectuer
+
+program="normale"
+echo $program
+        sim-cache  $C1  -redir:sim $RESDIR/normale_C1.res $program.ss
+        sim-cache  $C2  -redir:sim $RESDIR/normale_C2.res $program.ss
+        sim-cache  $C3  -redir:sim $RESDIR/normale_C3.res $program.ss
+        sim-cache  $C4  -redir:sim $RESDIR/normale_C4.res $program.ss
+        sim-cache  $C5  -redir:sim $RESDIR/normale_C5.res $program.ss
+        sim-cache  $C6  -redir:sim $RESDIR/normale_C6.res $program.ss
+
+
+program="tempo"
+echo $program
+        sim-cache  $C1  -redir:sim $RESDIR/tempo_C1.res $program.ss
+        sim-cache  $C2  -redir:sim $RESDIR/tempo_C2.res $program.ss
+        sim-cache  $C3  -redir:sim $RESDIR/tempo_C3.res $program.ss
+        sim-cache  $C4  -redir:sim $RESDIR/tempo_C4.res $program.ss
+        sim-cache  $C5  -redir:sim $RESDIR/tempo_C5.res $program.ss
+        sim-cache  $C6  -redir:sim $RESDIR/tempo_C6.res $program.ss
+
+program="unrol"
+echo $program
+        sim-cache  $C1  -redir:sim $RESDIR/unrol_C1.res $program.ss
+        sim-cache  $C2  -redir:sim $RESDIR/unrol_C2.res $program.ss
+        sim-cache  $C3  -redir:sim $RESDIR/unrol_C3.res $program.ss
+        sim-cache  $C4  -redir:sim $RESDIR/unrol_C4.res $program.ss
+        sim-cache  $C5  -redir:sim $RESDIR/unrol_C5.res $program.ss
+        sim-cache  $C6  -redir:sim $RESDIR/unrol_C6.res $program.ss
+
+program="pointer"
+echo $program
+        sim-cache  $C1  -redir:sim $RESDIR/pointer_C1.res $program.ss
+        sim-cache  $C2  -redir:sim $RESDIR/pointer_C2.res $program.ss
+        sim-cache  $C3  -redir:sim $RESDIR/pointer_C3.res $program.ss
+        sim-cache  $C4  -redir:sim $RESDIR/pointer_C4.res $program.ss
+        sim-cache  $C5  -redir:sim $RESDIR/pointer_C5.res $program.ss
+        sim-cache  $C6  -redir:sim $RESDIR/pointer_C6.res $program.ss
+
+
+#Permet de regrouper les donnes essentielles des fichiers resultats
+
+        grep "sim_num_insn" $RESDIR/*.res > $RESDIR/sim_num_insn.txt
+        grep "sim_num_refs" $RESDIR/*.res > $RESDIR/sim_num_refs.txt
+        grep "sim_elapsed_time" $RESDIR/*.res > $RESDIR/sim_elapsed_time.txt
+        grep "il1.miss_rate" $RESDIR/*.res > $RESDIR/il1_miss_rate.txt
+        grep "dl1.miss_rate" $RESDIR/*.res > $RESDIR/dl1_miss_rate.txt
+        grep "dl2.miss_rate" $RESDIR/*.res > $RESDIR/dl2.miss_rate.txt             
+

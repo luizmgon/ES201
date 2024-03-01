@@ -1,0 +1,15 @@
+simu/simu_nottaken.out
+sim_cycle                  10068798 # total simulation time in cycles
+sim_CPI                      0.6815 # cycles per instruction
+simu/simu_taken.out
+sim_cycle                  10068408 # total simulation time in cycles
+sim_CPI                      0.6815 # cycles per instruction
+simu/simu_perfect.out
+sim_cycle                   5202420 # total simulation time in cycles
+sim_CPI                      0.3521 # cycles per instruction
+simu/simu_bimod.out
+sim_cycle                   5438930 # total simulation time in cycles
+sim_CPI                      0.3681 # cycles per instruction
+simu/simu_2lev.out
+sim_cycle                   5441322 # total simulation time in cycles
+sim_CPI                      0.3683 # cycles per instruction
