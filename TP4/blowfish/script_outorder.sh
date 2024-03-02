@@ -13,14 +13,14 @@ A7_DL2="-cache:dl2 ul2:2048:32:8:l"
 A15_IL2="-cache:il2 dl2"
 A15_DL2="-cache:dl2 ul2:512:64:16:l"
 
-#for SIZE in 16 32 64 128 256
-#do
-#	OPTIONS="-bpred bimod -fetch:mplat 8 -fetch:ifqsize 4 -decode:width 2 -issue:width 4 -commit:width 2 -ruu:size 2 -lsq:size 8 -res:ialu 1 -res:fpalu 1 -res:fpmult 1 -res:imult 1"
-#	A7_IL1="-cache:il1 il1:$SIZE:32:2:l"
-#	A7_DL1="-cache:dl1 dl1:$SIZE:32:2:l"
-#	REDIR_OUT_SIMU1="-redir:sim simu_out/simu_cache_A7_${SIZE}.out"
-#	$SIM_OUT_ORDER $OPTIONS $A7_IL1 $A7_DL1 $A7_IL2 $A7_DL2 $REDIR_OUT_SIMU1 $PRG_SS
-#done
+for SIZE in 16 32 64 128 256
+do
+	OPTIONS="-bpred bimod -fetch:mplat 8 -fetch:ifqsize 4 -decode:width 2 -issue:width 4 -commit:width 2 -ruu:size 2 -lsq:size 8 -res:ialu 1 -res:fpalu 1 -res:fpmult 1 -res:imult 1"
+	A7_IL1="-cache:il1 il1:$SIZE:32:2:l"
+	A7_DL1="-cache:dl1 dl1:$SIZE:32:2:l"
+	REDIR_OUT_SIMU1="-redir:sim simu_out/simu_cache_A7_${SIZE}.out"
+	$SIM_OUT_ORDER $OPTIONS $A7_IL1 $A7_DL1 $A7_IL2 $A7_DL2 $REDIR_OUT_SIMU1 $PRG_SS
+done
 
 for SIZE in 16 32 64 128 256
 do
