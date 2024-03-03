@@ -1,0 +1,5 @@
+sim_IPC                      0.5025 # instructions per cycle
+bpred_bimod.bpred_addr_rate    0.9850 # branch address-prediction rate (i.e., addr-hits/updates)
+il1.miss_rate                0.1095 # miss rate (i.e., misses/ref)
+dl1.miss_rate                0.1698 # miss rate (i.e., misses/ref)
+ul2.miss_rate                0.0060 # miss rate (i.e., misses/ref)
